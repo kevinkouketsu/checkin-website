@@ -385,8 +385,7 @@ $('#btnDoCheckin').on('click', function () {
 		success: function(data)
 		{
 			var dados = JSON.parse(data);
-			if(dados.error == -1) 
-			{
+			if(dados.error == -1) {
 				reloadTables();
 				
 				$( "#searchMonitor" ).val('');

@@ -3,6 +3,7 @@
 namespace App\Model;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class EventList extends Model
 {
@@ -35,10 +36,40 @@ class EventList extends Model
         return $query->where('id', $id);
     }
 
-    public function deletEvent($id)
+    /**
+     * [get type]
+     * @param  [type] $query [description]
+     * @param  [type] $type  [description]
+     * @return [type]        [description]
+     */
+    public function scopeType($query, $type)
     {
-        $event = auth()->user()->events()->event($id)->get()->first();
+        return $query->where('eventtype_id', $type);
+    }
 
+    /**
+     * [scopeCity description]
+     * @param  [type] $query [description]
+     * @param  [type] $city  [description]
+     * @return [type]        [description]
+     */
+    public function scopeCity($query, $city)
+    {
+        return $query->where('city_code', $city);
+    }
+
+    public function scopeOnUsers($query, $ids)
+    {
+        $id = is_array($ids) ? $ids : array(0 => $ids);
+        if(count($id)) 
+            $query->whereIn('user_id', $id);
+        
+
+        return $query;
+    }
+
+    public function deletEvent(EventList $event)
+    {
         if(!$event) 
             return false;
 
@@ -65,38 +96,50 @@ class EventList extends Model
         return $insert;
     }  
     
+    /**
+     * [scopeOnDateBetween description]
+     * @param  [type] $dateInitial [description]
+     * @param  [type] $dateFinal   [description]
+     * @return [type]              [description]
+    */
+    public function scopeOnDateBetween($query, $dateInitial, $dateFinal)
+    {
+        if( !is_null($dateInitial) ) {
+            $dateInitial = (($dateInitial instanceof Carbon)
+                            ? $dateInitial
+                            : Carbon::parse($dateInitial))
+                                ->setTime(23, 59, 59)
+                                ->toDateTimeString();
+
+            // como podemos passar apenas a data de inicio e não final, devemos prever isso
+            $dateFinal = (($dateFinal instanceof Carbon)
+                            ? $dateFinal
+                            : ((is_string($dateFinal))
+                                ? Carbon::parse($dateFinal)
+                                : Carbon::now()))
+                                ->setTime(23, 59, 59)
+                                ->toDateTimeString();
+
+            $query->whereBetween('data', [$dateInitial, $dateFinal]);
+        }
+    }
+
     public function getEventList($id, $request = null)
     {
-        if($request !== null)
-        {
-            $eventList = $this->where('user_id', $id)->where(function($query) use ($request) {
-                if(isset($request->name))
-                    $query->where('name', 'LIKE', "%{$request->name}%");
+        $query = $this->newQuery();
+        $query = $query->onUsers($id); // scope: método scopeOnUsers
 
-                if(isset($request->dateInitial))
-                    $query->where('data', '>=', $request->dateInitial." 23:59:59");
-                
-                if(isset($request->dateInitial))
-                    $query->where('data', '>=', $request->dateInitial." 23:59:59");
-                
-                if(isset($request->dateMax))
-                    $query->where('data', '<=', $request->dateMax . " 23:59:59");
+        $dateInitial = isset($request->dateInitial) ? $request->dateInitial : NULL;
+        $dateMax = isset($request->dateMax) ? $request->dateMax : NULL;
 
-                if(isset($request->type) && $request->type != -1)
-                    $query->where('eventtype_id', $request->type);
+        if(isset($request->cities) && $request->cities != -1)
+            $query->city($request->cities);
 
-                if(isset($request->cities))
-                    $query->where('city_code', $request->cities);
-            })->orderBy('data', 'DESC')
-              ->with('city')
-              ->paginate($this->perPage);
-        }
-        else
-            $eventList = $this->where('user_id', $id)
-                              ->orderBy('data', 'DESC')
-                              ->with('city')
-                              ->paginate($this->perPage);
-    
-        return $eventList;
+        if(isset($request->type) && $request->type != -1)
+            $query->type($request->type);
+
+        $query = $query->onDateBetween($dateInitial, $dateMax);
+
+        return $query->with('city')->paginate($this->perPage);
     }
 }

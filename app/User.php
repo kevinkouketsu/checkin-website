@@ -8,7 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Model\Graduate;
 use App\Model\UserAddress;
 use App\Model\EventList;
-
+use DB;
 class User extends Authenticatable
 {
     use Notifiable;
@@ -41,7 +41,7 @@ class User extends Authenticatable
 
     public function addresses()
     {
-        return $this->hasMany(UserAddress::class);  
+        return $this->hasOne(UserAddress::class, 'user_id', 'id');  
     }
 
     public function network()
@@ -71,6 +71,7 @@ class User extends Authenticatable
     {
         return $query->where('username', $username);
     }
+
     // ------------------------
     // Get funcs
     // ------------------------
@@ -89,7 +90,7 @@ class User extends Authenticatable
 
     public function getNetwork(int $user_id) : array
     {
-        $result = User::where('id', $user_id)->get();
+        $result = User::id($user_id)->get();
 
         $finalResult = $result->all();
         while(true)
@@ -119,7 +120,7 @@ class User extends Authenticatable
 
     public function getNetworkId(int $user_id) : array
     {
-        $result = User::where('id', $user_id)->get();
+        $result = User::id($user_id)->get();
 
         $r = array();
         $count = 0;
@@ -161,13 +162,47 @@ class User extends Authenticatable
         $username = $part1. $part2. $part3; //str_shuffle to randomly shuffle all characters 
     }
 
+    public function completeRegister($data, $user_address)
+    {
+        $username = kebab_case($data->name);
+
+        while($this->username($username)->count())
+            $username = $this->generateUserName($data->name);
+           
+        DB::beginTransaction();
+
+        $user = $this->insertGetId ([
+            'name' => title_case($data->name),
+            'username' => $username,
+            'email' => NULL,
+            'password' => NULL,
+            'graduate_id' => $data->graduation
+        ]);
+
+        if(!$user)
+        {
+            DB::rollBack();
+
+            return false;
+        }
+
+        $resultAddress = $user_address->updateAddress($user, $data);
+        if($resultAddress)
+        { 
+            DB::commit();
+            return $user;
+        }
+
+        return false;
+    }
+
     public function register($data)
     {
         $username = kebab_case($data->name);
 
         while($this->username($username)->count())
             $username = $this->generateUserName($data->name);
-
+        
         return $this->insert([
             'name' => title_case($data->name),
             'username' => $username,
@@ -176,4 +211,5 @@ class User extends Authenticatable
             'graduate_id' => $data->graduation
         ]);
     }
+
 }

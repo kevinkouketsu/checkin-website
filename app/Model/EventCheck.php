@@ -13,6 +13,7 @@ class EventCheck extends Model
     protected $dates = ['time_arrived'];
     protected $fillable = ['sold'];
     public $timestamps = false;
+    
     public function event()
     {
         return $this->belongsTo(EventList::class);

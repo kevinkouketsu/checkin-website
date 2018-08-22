@@ -81,17 +81,16 @@ class ReportController extends Controller
 
     public function staffOnEventList(Request $request, EventCheck $check, User $user)
     {
-        $pai = $request->pai_id_staff;
-        $eventId = $request->event_id;
+        $pai        = $request->pai_id_staff;
+        $eventId    = $request->event_id;
 
-        $network = $user->getNetworkId($pai);
-        
-        $checkList = $check->eventId($eventId)
+        $network    = $user->getNetworkId($pai);
+        $checkList  = $check->eventId($eventId)
                             ->network(array_column($network, 'user_id'))
                             ->get();
+        $i          = 1;
+        $result     = array();
         
-        $i = 1;
-        $result = array();
         foreach($checkList as $r) {
             $result[] = [
                 $i, 

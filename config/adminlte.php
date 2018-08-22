@@ -114,6 +114,17 @@ return [
             'url'         => 'dashboard',
             'icon'        => 'dashboard'
         ],
+        'EQUIPE',
+        [
+            'text'          => 'Cadastrar',
+            'url'           => 'usuario/cadastrar',
+            'icon'          => 'user-plus'
+        ],
+        [
+            'text'          => 'Listar',
+            'url'           => 'usuario/equipe',
+            'icon'          => 'list'
+        ],
         'EVENTOS',
         [
             'text'          => 'Criar evento',
@@ -128,8 +139,8 @@ return [
         [
             'text'          => 'Tipos de Evento',
             'url'           => 'eventos/tipos',
-            'icon'          => ''
-        ]
+            'icon'          => 'comment-o'
+        ],
     ],
 
     /*

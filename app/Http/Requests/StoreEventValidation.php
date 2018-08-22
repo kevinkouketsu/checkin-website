@@ -43,7 +43,7 @@ class StoreEventValidation extends FormRequest
             'data.required'             => 'O campo data é obrigatório',
             'data.date'                 => 'Data em formato incorreto',
             'cities.required'           => 'O campo Cidade é obrigatório',
-            'citise.exists'             => 'Preenchimento da cidade é obrigatório',
+            'cities.exists'             => 'Preenchimento da cidade é obrigatório',
             'description.required'      => 'O campo descrição é obrigatório'
         ];
     }

@@ -19,6 +19,7 @@ class CreateUserAddressesTable extends Migration
             $table->foreign('user_id')->references('id')->on('users');
             $table->string('address', 100);
             $table->string('street', 32);
+            $table->string('complement', 64);
             $table->integer('number');
             $table->integer('city_code')->unsigned();
             $table->foreign('city_code')->references('code')->on('cities');

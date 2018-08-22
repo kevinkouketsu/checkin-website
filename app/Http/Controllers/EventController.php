@@ -6,52 +6,80 @@ use Illuminate\Http\Request;
 use App\Model\EventList;
 use App\Model\EventType;
 use App\Model\EventCheck;
-use App\User;
 use App\Model\State;
-use Carbon\Carbon;
 use App\Model\Graduate;
+use App\User;
+
+use App\Http\Requests\StoreEventValidation;
+use App\Http\Requests\EventTypeValidation;
+
+use Illuminate\Support\Facades\Cache;
 use DB;
 use Validator;
-use App\Http\Requests\StoreEventValidation;
+use Carbon\Carbon;
 
 class EventController extends Controller
 {
-    //
-    public function eventListFilter(Request $request, EventList $event)
+    //    
+    public function eventListFilter(EventList $event, EventType $eventsType, Carbon $date, State $states, Request $request)
     {
         $eventList = $event->getEventList(auth()->user()->id, $request);
            
-        $eventType = EventType::all();
-        $state = State::all();
-        $date = Carbon::now();
-        
-        // set 'old' value to view
-        $request->flash();
+        // get all avaiable states
+        $state = $states->all();
 
         // dataForm to append on pagination links 
         $dataForm = $request->except('_token');
+        $eventType = Cache::remember('eventsType', 5, function () use ($eventsType) {
+            return $eventsType
+                        // Especifiques as colunas que irá utilizar na view
+                        // descartando todo o resto.
+                        // Me parece que aqui você pode utilizar cache, p.x:
+                        // https://laravel.com/docs/5.6/cache
+                        ->all();
+        });
 
+        $request->flash();
         return view('events.list', compact('eventList', 'eventType', 'date', 'dataForm', 'state'));
     }
 
-    public function editTypes($id, Request $request, EventType $type)
+    public function editTypes(Request $request, EventType $type)
     {
-        dd($request->all());
-        $validator = Validator::make(['id' => $id, 'name' => $name], [
-            'name'              => 'required|min:4',
-        ]);
+        $validator = Validator::make(['id' => $request->edit_type, 'name' => $request->edit_name], [
+                'name'              => 'required|min:4|unique:event_types,name',
+                'id'                => 'required|exists:event_types,id'],
+            [
+                'name.required'     => 'O campo nome é obrigatório',
+                'name.min'          => 'O tamanho mínimo para o nome do evento é de 4 caracteres',
+                'name.unique'       => 'O nome já está sendo utilizado',
+                'id.required'       => 'O tipo de evento é inválido',
+                'id.exists'         => 'Este tipo de evento não existe'
+            ]
+        )->validate();
+        
+        //
+        if($type->updateType($request->edit_type, $request->edit_name))
+            return response()->json(['error' => -1, 'msg' => 'Atualizado com sucesso']);
+        
+        return response()->json(['error' => 1, 'msg' => 'Falha ao atualizar']);
     }
 
-    public function editGet($id, EventType $type)
+    public function newTypes(EventTypeValidation $request, EventType $type) 
     {
-        $info = $type->id($id)->get()->first();
+        if($type->new($request->name))
+            $success = array('msg' => 'Tipo criado com sucesso');
 
-        return response()->json(['info' => $info]);
+        return redirect(route('eventos.tipos'))->with('success', 'Criado com sucesso');
     }
 
-    public function types()
+    public function getTypes(EventType $type)
     {
-        $type = EventType::all();
+        return response()->json(['info' => $type]);
+    }
+
+    public function types(EventType $type)
+    {
+        $type = $type->paginate(15);
 
         return view('events.types', compact('type'));
     }
@@ -64,7 +92,7 @@ class EventController extends Controller
         return response()->json(['error' => 1]);
     }
 
-    public function eventView($name, $id)
+    public function eventView($name, $id, Graduate $graduate)
     {
         // initialize object EventList 
         $event = new EventList;
@@ -75,14 +103,14 @@ class EventController extends Controller
         // get eventInfo
         $eventInfo = $event->getEventInfo($id);
 
-        $graduate = Graduate::all();
+        $graduate = $graduate->get();
         return view('events.view', compact('eventInfo', 'graduate'));
     }
 
-    public function createEvent()
+    public function createEvent(EventType $type, State $states)
     {
-        $eventType = EventType::all();
-        $state = State::all();
+        $eventType = $type->all();
+        $state = $states->all();
 
         return view('events.create', compact('state', 'eventType'));
     }
@@ -92,18 +120,13 @@ class EventController extends Controller
         $result = $list->insertEvent($request->except('_token', 'states'));
 
         if($result) {
-            // initialize object EventList 
-            $event = new EventList;
-    
-            $eventInfo = $event->getEventInfo($result->id);
+            $eventInfo = $list->getEventInfo($result->id);
     
             return redirect(route('eventos.visualizar', ['nome'=> kebab_case ($eventInfo->name), 'id'=>$eventInfo->id]));
         }
-        else {
-            
-        return redirect()
-                ->back();   
-        }
+        else    
+            return redirect()
+                    ->back();   
     }
 
     public function doCheckin(Request $request, User $user, EventCheck $check)

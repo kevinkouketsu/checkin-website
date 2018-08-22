@@ -26,10 +26,15 @@ class RouteServiceProvider extends ServiceProvider
         //
 
         parent::boot();
+
+        Route::bind('eventTypeId', function ($eventTypeId) {
+            // API: https://laravel.com/api/5.6/Illuminate/Database/Eloquent/Builder.html#method_findOrFail
+            return EventType::findOrFail($eventTypeId);
+        });
     }
 
     /**
-     * Define the routes for the application.
+     * Define whe routes for the application.
      *
      * @return void
      */

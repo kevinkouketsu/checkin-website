@@ -33,7 +33,7 @@
                                 @forelse ($type as $t)
                                 <tr>
                                     <td>{{ $t->name }}</td>
-                                    <td><a class="editType" href="{{ route('eventos.tipo.get', $t->id) }}">editar</a></td>
+                                    <td><a class="editType" href="{{ route('eventos.tipo.get', $t->id) }}"><i class="fa fa-pencil" aria-hidden="true"></i></a></td>
                                 </tr>
                                 @empty
                                 <tr>
@@ -45,6 +45,7 @@
                             </tbody>
                         </table>
                     </div>
+                    {{ $type->links() }}
                 </div>
                 <!-- box-body -->
             </div>
@@ -54,18 +55,40 @@
         <div class="col-lg-4">
             <div class="box box-primary">
                 <div class="box-header with-border">
-                    <h3 class="box-title">Adicionar um novo evento</h3>
+                    <h3 class="box-title">Adicionar um novo tipo</h3>
                 </div>
-                <form method="POST">
+                <div class="col-md-12">
+                    @if ($errors->any())
+                        <div class="alert alert-danger">
+                            <ul>
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif     
+
+                    @if(session('success'))
+                        <div class="alert alert-success">
+                            <ul>
+                                <li>
+                                    {{ session('success') }}
+                                </li>
+                            </ul>
+                        </div>
+                    @endif
+                </div> 
+                <form method="POST" action="{{ route('eventos.tipo.novo') }}">
+                    {{ csrf_field() }}
                     <div class="box-body">
                         <div class="form-group">
-                            <label for="exampleInputEmail1">Nome do Tipo</label>
-                            <input type="type" class="form-control" id="name" placeholder="">
+                            <label for="name">Nome do Tipo</label>
+                            <input type="type" class="form-control" id="event_name" name="name" placeholder="" value="{{ old('name') }}">
                         </div>
                     </div>
                     <!-- box-body-->
                     <div class="box-footer">
-                      <button type="submit" class="btn btn-primary">Submit</button>
+                      <button type="submit" class="btn btn-primary">Criar</button>
                     </div>
                 </form>
             </div>
@@ -82,29 +105,35 @@
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span></button>
-                    <h4 class="modal-title">Cadastrar Convidado</h4>
+                    <h4 class="modal-title">Editar tipo de evento</h4>
                 </div>
-                <div class="modal-body">
-                    
-                    <div class="alert alert-danger print-error-msg" style="display:none">
-                        <ul></ul>
-                    </div>
-                    <form id="form_edit" class="form-horizontal" action="" method="POST">
-                        {{ csrf_field() }}
-                        <div class="form-group">
-                            <label for="name" class="col-sm-3 control-label">Nome <span class="required">*</span></label>
-    
-                            <div class="col-sm-9">
-                                <input type="text" class="form-control" name="edit_name" id="edit_name" placeholder="Nome">
-                            </div>
+                <form id="form_edit" action="{{ route('eventos.tipo.editar') }}"class="form-horizontal" action="" method="POST">
+                    <div class="modal-body">
+                        <div class="alert alert-danger" id="error-type" style="display:none">
+                            <ul>
+                                
+                            </ul>
                         </div>
-                        <input type="hidden" id="edit_type" value="-1">
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default pull-left" data-dismiss="modal">Fechar</button>
-                    <button type="button" id="btnEdit" class="btn btn-primary">Editar</button>
-                </div>
+                        <div class="alert alert-success" id="success-type" style="display:none">
+                            <ul>
+                                
+                            </ul>
+                        </div>
+                            {{ csrf_field() }}
+                            <div class="form-group">
+                                <label for="name" class="col-sm-3 control-label">Nome <span class="required">*</span></label>
+        
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" name="edit_name" id="edit_name" placeholder="Nome">
+                                </div>
+                            </div>
+                            <input type="hidden" name="edit_type" id="edit_type" value="-1">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default pull-left" data-dismiss="modal">Fechar</button>
+                        <button type="submit" id="btnEdit" class="btn btn-primary">Editar</button>
+                    </div>
+                </form>
             </div>
             <!-- /.modal-content -->
         </div>
